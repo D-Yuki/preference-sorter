@@ -114,7 +114,7 @@ with col2:
         if st.button("左の欄に読み込む"):
             content = uploaded.read().decode("utf-8", errors="ignore")
             st.session_state.raw_text = content
-            st.experimental_rerun()
+            st.rerun()
 
 # --------------- ② ソート開始ボタン ---------------
 if st.button("② ソート開始"):
@@ -169,34 +169,34 @@ else:
                 # スマホ：縦並び
                 if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, type="primary", key="tie_sp"):
                     process_choice("tie")
-                    st.experimental_rerun()
+                    st.rerun()
 
-                # 下に2つの候補ボタン（ラベルは曲名だけ）
+                # 下に2つの候補ボタン（ラベルは項目名だけ）
                 if st.button(left_item, use_container_width=True, key="left_sp"):
                     process_choice("left")
-                    st.experimental_rerun()
+                    st.rerun()
 
                 if st.button(right_item, use_container_width=True, key="right_sp"):
                     process_choice("right")
-                    st.experimental_rerun()
+                    st.rerun()
 
             else:
                 # PC：同じくらいボタン → 左右2列
                 if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, type="primary", key="tie_pc"):
                     process_choice("tie")
-                    st.experimental_rerun()
+                    st.rerun()
 
                 colL, colR = st.columns(2)
 
                 with colL:
                     if st.button(left_item, use_container_width=True, key="left_pc"):
                         process_choice("left")
-                        st.experimental_rerun()
+                        st.rerun()
 
                 with colR:
                     if st.button(right_item, use_container_width=True, key="right_pc"):
                         process_choice("right")
-                        st.experimental_rerun()
+                        st.rerun()
 
     # 並べ替えが完了したら結果表示
     if s.finished:
@@ -221,4 +221,4 @@ else:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             init_state()
-            st.experimental_rerun()
+            st.rerun()
