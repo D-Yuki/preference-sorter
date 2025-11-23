@@ -76,7 +76,7 @@ def process_choice(choice: str):
 # -----------------------------
 # ここから画面レイアウト
 # -----------------------------
-st.title("好みソートツール（スマホ対応・同順位あり）")
+st.title("好みソートツール（同順位あり）")
 
 layout_mode = st.radio(
     "レイアウトモード",
@@ -164,10 +164,10 @@ else:
         if left_item is not None and right_item is not None:
             st.markdown("#### 好きな方を選んでください")
 
-            # --- まず「同じくらい」ボタン（上） ---
+            # --- 同じくらいボタン（上） ---
             if layout_mode.startswith("スマホ用"):
                 # スマホ：縦並び
-                if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, type="primary", key="tie_sp"):
+                if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, key="tie_sp"):
                     process_choice("tie")
                     st.rerun()
 
@@ -181,8 +181,8 @@ else:
                     st.rerun()
 
             else:
-                # PC：同じくらいボタン → 左右2列
-                if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, type="primary", key="tie_pc"):
+                # PC：同じくらいボタン → その下に左右2列
+                if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, key="tie_pc"):
                     process_choice("tie")
                     st.rerun()
 
