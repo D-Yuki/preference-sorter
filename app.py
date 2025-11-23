@@ -174,7 +174,7 @@ else:
 
                 # 真ん中：同じくらい
                 st.button(
-                    "同じくらい（同順位）",
+                    "同じくらい",
                     key="btn_tie_mobile",
                     on_click=process_choice,
                     args=("tie",),
@@ -251,4 +251,5 @@ else:
                 del st.session_state[key]
             init_state()
             st.experimental_rerun()
+
 
