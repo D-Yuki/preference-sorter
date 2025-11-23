@@ -165,7 +165,7 @@ else:
 
                 # 上：左候補
                 st.button(
-                    f"← {left_item}",
+                    f"{left_item}",
                     key="btn_left_mobile",
                     on_click=process_choice,
                     args=("left",),
@@ -183,7 +183,7 @@ else:
 
                 # 下：右候補
                 st.button(
-                    f"{right_item} →",
+                    f"{right_item}",
                     key="btn_right_mobile",
                     on_click=process_choice,
                     args=("right",),
@@ -251,3 +251,4 @@ else:
                 del st.session_state[key]
             init_state()
             st.experimental_rerun()
+
