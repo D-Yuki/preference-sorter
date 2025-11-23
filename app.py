@@ -49,12 +49,12 @@ def process_choice(choice: str):
         advance_insertion()
         return
 
-    # 上か下か
+    # 上 or 下
     mid = (s.low + s.high) // 2
 
-    if choice == "top":      # 上が好き（既存グループが勝つ）
+    if choice == "top":
         s.low = mid + 1
-    elif choice == "bottom": # 下が好き（新しい方が勝つ）
+    elif choice == "bottom":
         s.high = mid
 
     # 挿入場所確定
@@ -67,6 +67,20 @@ def process_choice(choice: str):
 # UI 本体
 # ==============================
 st.title("好みソートツール（同順位あり）")
+
+# --- ボタン押下時の色変化を消す ---
+st.markdown(
+    """
+    <style>
+    .stButton > button:focus, .stButton > button:active {
+        background-color: inherit !important;
+        color: inherit !important;
+        box-shadow: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------------- ① 入力 ----------------
 st.header("① 項目入力")
@@ -129,7 +143,7 @@ elif not s.finished and s.inserting_item is not None:
     top_item = s.sorted_tiers[mid][0]
     bottom_item = s.inserting_item
 
-    # ----- 同じ（上中央に配置） -----
+    # ----- 同じ（中央ボタン） -----
     colL, colC, colR = st.columns([1, 2, 1])
     with colC:
         if st.button("同じ（同順位）", use_container_width=True, key=f"tie_{s.current_index}"):
