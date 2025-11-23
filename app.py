@@ -17,7 +17,7 @@ def init_state():
         s.high = 0
         s.comparison_count = 0
         s.raw_text = ""
-        s.undo_stack = []   # ← 追加：Undo 用の履歴
+        s.undo_stack = []   # Undo 用の履歴
 
 init_state()
 
@@ -83,6 +83,9 @@ def process_choice(choice: str):
 
     # Undo 用に現状態保存
     save_state_for_undo()
+
+    # ★ここで比較回数を +1（Undo 時はスナップショットから戻る）
+    s.comparison_count += 1
 
     if choice == "tie":  # 同じ
         mid = (s.low + s.high) // 2
@@ -172,7 +175,7 @@ if st.button("② ソート開始"):
         s.comparison_count = 0
         s.initialized = True
         s.finished = False
-        s.undo_stack = []     # ← スタック初期化
+        s.undo_stack = []     # Undo スタック初期化
         st.rerun()
 
 st.divider()
@@ -214,9 +217,9 @@ elif not s.finished and s.inserting_item is not None:
         process_choice("bottom")
         st.rerun()
 
-    # ----- 戻るボタン（小さめ） -----
+    # ----- 戻るボタン（小さめ・中央） -----
     st.markdown("<br>", unsafe_allow_html=True)
-    col_undo = st.columns([5, 2, 5])[1]  # 中央小さめ
+    col_undo = st.columns([5, 2, 5])[1]
     with col_undo:
         if st.button("← 1つ戻る", key="undo_button"):
             undo_last()
