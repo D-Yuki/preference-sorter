@@ -8,14 +8,14 @@ def init_state():
     if "initialized" not in s:
         s.initialized = False
         s.finished = False
-        s.item_list = []         # ← items ではなく item_list
-        s.sorted_tiers = []
+        s.item_list = []         # 項目リスト
+        s.sorted_tiers = []      # [[同順位グループ1], [同順位グループ2], ...]
         s.current_index = 0
         s.inserting_item = None
         s.low = 0
         s.high = 0
         s.comparison_count = 0
-        s.raw_text = ""  # 入力テキスト
+        s.raw_text = ""          # 入力テキスト
 
 
 init_state()
@@ -46,7 +46,7 @@ def process_choice(choice: str):
     if not s.initialized or s.finished:
         return
 
-    # 同じくらい
+    # 「同じくらい」
     if choice == "tie":
         s.comparison_count += 1
         mid = (s.low + s.high) // 2
@@ -62,10 +62,13 @@ def process_choice(choice: str):
     mid = (s.low + s.high) // 2
 
     if choice == "left":
+        # 既存グループのほうが好き → 新しい項目は後ろに入る
         s.low = mid + 1
     elif choice == "right":
+        # 新しい項目のほうが好き → もっと前側に入る
         s.high = mid
 
+    # 挿入位置が確定したら挿入
     if s.low >= s.high:
         s.sorted_tiers.insert(s.low, [s.inserting_item])
         advance_insertion()
@@ -77,12 +80,19 @@ def process_choice(choice: str):
 
 st.title("好みソートツール（Streamlit版・同順位対応）")
 
+# ★ スマホ・PC レイアウト切り替え
+layout_mode = st.radio(
+    "レイアウトモード",
+    ["スマホ用レイアウト", "PC用レイアウト"],
+    horizontal=True,
+)
+
 st.markdown(
     """
-1. 左側のテキキストに **1行に1つずつ** 項目を入力するか、ファイルを読み込みます  
-2. 「ソート開始」を押すと比較が始まります  
-3. 「左が好き／同じくらい／右が好き」を選び続けるとランキングが完成  
-4. TXT に出力できます
+1. 下のテキストに **1行に1つずつ** 項目を入力するか、ファイルを読み込みます  
+2. 「② ソート開始」を押すと比較画面が出ます  
+3. 「左が好き／同じくらい／右が好き」を選び続けるとランキングが完成します  
+4. 結果は TXT としてダウンロードできます
 """
 )
 
@@ -109,8 +119,8 @@ with col2:
 
     st.markdown(
         """
-- UTF-8 / Shift-JIS どちらでもOK  
-- 読み込んだ内容は左のテキストで編集できます
+- UTF-8 / Shift-JIS どちらでもだいたいOKです  
+- 読み込んだ後は左のテキストで編集できます
 """
     )
 
@@ -122,7 +132,7 @@ if st.button("② ソート開始"):
     else:
         s = st.session_state
         s.item_list = lines
-        s.sorted_tiers = [[lines[0]]]
+        s.sorted_tiers = [[lines[0]]]      # 1つ目を1位グループとして追加
         s.current_index = 1
         s.inserting_item = lines[1]
         s.low = 0
@@ -130,7 +140,7 @@ if st.button("② ソート開始"):
         s.comparison_count = 0
         s.initialized = True
         s.finished = False
-        st.success("ソートを開始しました。下の比較エリアへ。")
+        st.success("ソートを開始しました。下の比較エリアに移動してください。")
 
 st.divider()
 
@@ -140,7 +150,7 @@ st.header("③ 比較して順位を決める")
 s = st.session_state
 
 if not s.initialized:
-    st.info("まず項目を入力して「ソート開始」を押してください。")
+    st.info("まず上で項目を入力して「② ソート開始」を押してください。")
 else:
     if not s.finished and s.inserting_item is not None:
         st.subheader("比較中…")
@@ -155,23 +165,77 @@ else:
             left_item = s.sorted_tiers[mid][0]
             right_item = s.inserting_item
 
-            colL, colC, colR = st.columns([3, 2, 3])
-
-            with colL:
-                st.markdown("#### 左（既存の順位）")
+            # ▼ レイアウトモードによってUIを切り替える
+            if layout_mode == "スマホ用レイアウト":
+                # ===== スマホ用：縦並び・ボタン大きめ =====
+                st.markdown("#### 左（既にある順位の代表）")
                 st.info(left_item)
-                st.button("左が好き ←", key="btn_left", on_click=process_choice, args=("left",))
+                st.button(
+                    "左が好き ←",
+                    key="btn_left_mobile",
+                    on_click=process_choice,
+                    args=("left",),
+                    use_container_width=True,
+                )
 
-            with colC:
                 st.markdown("#### 同じくらい")
-                st.write("同順位にしたいとき")
-                st.button("同じくらい（Space）", key="btn_tie", on_click=process_choice, args=("tie",))
+                st.write("同順位にしたいときはこちら")
+                st.button(
+                    "同じくらい（同順位）",
+                    key="btn_tie_mobile",
+                    on_click=process_choice,
+                    args=("tie",),
+                    use_container_width=True,
+                )
 
-            with colR:
-                st.markdown("#### 右（新項目）")
+                st.markdown("#### 右（新しく挿入する項目）")
                 st.success(right_item)
-                st.button("右が好き →", key="btn_right", on_click=process_choice, args=("right",))
+                st.button(
+                    "右が好き →",
+                    key="btn_right_mobile",
+                    on_click=process_choice,
+                    args=("right",),
+                    use_container_width=True,
+                )
+
+            else:
+                # ===== PC用：左右＋中央 3カラム =====
+                colL, colC, colR = st.columns([3, 2, 3])
+
+                with colL:
+                    st.markdown("#### 左（既にある順位）")
+                    st.info(left_item)
+                    st.button(
+                        "左が好き ←",
+                        key="btn_left_pc",
+                        on_click=process_choice,
+                        args=("left",),
+                        use_container_width=True,
+                    )
+
+                with colC:
+                    st.markdown("#### 同じくらい")
+                    st.write("同順位にしたいとき")
+                    st.button(
+                        "同じくらい",
+                        key="btn_tie_pc",
+                        on_click=process_choice,
+                        args=("tie",),
+                        use_container_width=True,
+                    )
+
+                with colR:
+                    st.markdown("#### 右（新項目）")
+                    st.success(right_item)
+                    st.button(
+                        "右が好き →",
+                        key="btn_right_pc",
+                        on_click=process_choice,
+                        args=("right",),
+                        use_container_width=True,
+                    )
         else:
+            # low >= high なのに挿入がまだの場合の保険
             s.sorted_tiers.insert(s.low, [s.inserting_item])
             advance_insertion()
 
@@ -182,7 +246,6 @@ else:
         lines = []
         for rank, tier in enumerate(s.sorted_tiers, start=1):
             lines.append(f"{rank}位: {' / '.join(tier)}")
-
         result_text = "\n".join(lines)
 
         st.text_area("結果", value=result_text, height=260)
