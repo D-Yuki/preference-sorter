@@ -1,4 +1,5 @@
 import streamlit as st
+import copy
 
 # ==============================
 # セッション状態の初期化
@@ -16,8 +17,45 @@ def init_state():
         s.high = 0
         s.comparison_count = 0
         s.raw_text = ""
+        s.undo_stack = []   # ← 追加：Undo 用の履歴
 
 init_state()
+
+
+# ==============================
+# 状態保存（Undo 用）
+# ==============================
+def save_state_for_undo():
+    s = st.session_state
+    snapshot = {
+        "sorted_tiers": copy.deepcopy(s.sorted_tiers),
+        "current_index": s.current_index,
+        "inserting_item": s.inserting_item,
+        "low": s.low,
+        "high": s.high,
+        "finished": s.finished,
+        "comparison_count": s.comparison_count,
+    }
+    s.undo_stack.append(snapshot)
+
+
+# ==============================
+# Undo（1つ戻る）
+# ==============================
+def undo_last():
+    s = st.session_state
+    if not s.undo_stack:
+        return
+
+    snap = s.undo_stack.pop()
+
+    s.sorted_tiers = snap["sorted_tiers"]
+    s.current_index = snap["current_index"]
+    s.inserting_item = snap["inserting_item"]
+    s.low = snap["low"]
+    s.high = snap["high"]
+    s.finished = snap["finished"]
+    s.comparison_count = snap["comparison_count"]
 
 
 # ==============================
@@ -43,13 +81,15 @@ def advance_insertion():
 def process_choice(choice: str):
     s = st.session_state
 
+    # Undo 用に現状態保存
+    save_state_for_undo()
+
     if choice == "tie":  # 同じ
         mid = (s.low + s.high) // 2
         s.sorted_tiers[mid].append(s.inserting_item)
         advance_insertion()
         return
 
-    # 上 or 下
     mid = (s.low + s.high) // 2
 
     if choice == "top":
@@ -57,7 +97,6 @@ def process_choice(choice: str):
     elif choice == "bottom":
         s.high = mid
 
-    # 挿入場所確定
     if s.low >= s.high:
         s.sorted_tiers.insert(s.low, [s.inserting_item])
         advance_insertion()
@@ -66,38 +105,27 @@ def process_choice(choice: str):
 # ==============================
 # UI 本体
 # ==============================
-st.title("好みソートツール（同順位あり）")
+st.title("好みソートツール（同順位あり・戻る機能付き）")
 
-# ----- ボタンの見た目を完全にコントロールする CSS -----
+# ----- ボタンの押し感（沈む表現） -----
 st.markdown(
     """
     <style>
-    /* すべての st.button に共通のスタイルを適用 */
     .stButton > button {
-        background-color: #f0f0f0 !important;  /* 基本色 */
-        color: #000000 !important;
-        border: 1px solid #cccccc !important;
+        background-color: #f0f0f0 !important;
+        color: #000;
+        border: 1px solid #ccc !important;
         border-radius: 6px !important;
-        box-shadow: none !important;
-        padding: 0.4em 0.75em !important;
-        font-size: 15px !important;
-        transition: background-color 0.05s ease-out, transform 0.05s ease-out;
+        transition: background-color 0.05s, transform 0.05s;
     }
-
-    /* マウスを乗せたとき（少しだけ濃く） */
     .stButton > button:hover {
         background-color: #e4e4e4 !important;
     }
-
-    /* フォーカスが当たった状態でも色を変えない（残らないようにする） */
     .stButton > button:focus {
         background-color: #f0f0f0 !important;
-        color: #000000 !important;
-        box-shadow: none !important;
         outline: none !important;
+        box-shadow: none !important;
     }
-
-    /* 押している瞬間だけ少し沈む & ちょっとだけ濃く */
     .stButton > button:active {
         background-color: #dcdcdc !important;
         transform: translateY(1px);
@@ -144,7 +172,7 @@ if st.button("② ソート開始"):
         s.comparison_count = 0
         s.initialized = True
         s.finished = False
-        st.success("ソートを開始しました！")
+        s.undo_stack = []     # ← スタック初期化
         st.rerun()
 
 st.divider()
@@ -163,30 +191,36 @@ elif not s.finished and s.inserting_item is not None:
         f"{s.current_index + 1} / {len(s.item_list)} 個目 ｜ 比較回数：{s.comparison_count}"
     )
 
-    # 現在の比較対象
     mid = (s.low + s.high) // 2
     top_item = s.sorted_tiers[mid][0]
     bottom_item = s.inserting_item
 
-    # ----- 「同じ」ボタン（中央配置） -----
+    # ----- 「同じ」ボタン（中央） -----
     colL, colC, colR = st.columns([1, 2, 1])
     with colC:
-        if st.button("同じ（同順位）", use_container_width=True, key=f"tie_{s.current_index}"):
+        if st.button("同じ（同順位）", use_container_width=True):
             process_choice("tie")
             st.rerun()
 
-    # ----- 1行スペース -----
     st.write("")
 
     # ----- 上の項目 -----
-    if st.button(top_item, use_container_width=True, key=f"top_{s.current_index}"):
+    if st.button(top_item, use_container_width=True):
         process_choice("top")
         st.rerun()
 
     # ----- 下の項目 -----
-    if st.button(bottom_item, use_container_width=True, key=f"bottom_{s.current_index}"):
+    if st.button(bottom_item, use_container_width=True):
         process_choice("bottom")
         st.rerun()
+
+    # ----- 戻るボタン（小さめ） -----
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_undo = st.columns([5, 2, 5])[1]  # 中央小さめ
+    with col_undo:
+        if st.button("← 1つ戻る", key="undo_button"):
+            undo_last()
+            st.rerun()
 
 # ---------------- ④ 完了 ----------------
 if s.finished:
