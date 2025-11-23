@@ -68,18 +68,19 @@ def process_choice(choice: str):
 # ==============================
 st.title("好みソートツール（同順位あり）")
 
+# ====== ボタン押した瞬間だけ沈む（押した感を出す） ======
 st.markdown(
     """
     <style>
-    /* 押したあとに残る青枠・強調スタイルだけ消す */
+    /* 押した後に色が残る演出は消す */
     .stButton > button:focus {
         outline: none !important;
         box-shadow: none !important;
     }
 
-    /* 押した瞬間だけ、ちょっと沈むような動きにする */
+    /* 押した瞬間だけ少し沈む */
     .stButton > button:active {
-        transform: translateY(1px);
+        transform: translateY(2px);
     }
     </style>
     """,
@@ -147,14 +148,14 @@ elif not s.finished and s.inserting_item is not None:
     top_item = s.sorted_tiers[mid][0]
     bottom_item = s.inserting_item
 
-    # ----- 同じ（中央ボタン） -----
+    # ----- 「同じ」ボタン（中央配置） -----
     colL, colC, colR = st.columns([1, 2, 1])
     with colC:
         if st.button("同じ（同順位）", use_container_width=True, key=f"tie_{s.current_index}"):
             process_choice("tie")
             st.rerun()
 
-    # 1行スペース
+    # ----- 1行スペース -----
     st.write("")
 
     # ----- 上の項目 -----
@@ -191,5 +192,3 @@ if s.finished:
             del st.session_state[key]
         init_state()
         st.rerun()
-
-
