@@ -161,52 +161,52 @@ else:
             # ▼ レイアウトモードによってUIを切り替える
             if layout_mode == "スマホ用レイアウト":
                # ===== スマホ用：項目名＝ボタン（縦3つだけ） =====
-            st.markdown("#### 好きな方をタップしてください")
-            
-            # 上：左候補
-            st.button(
-                f"{left_item}",
-                key="btn_left_mobile",
-                on_click=process_choice,
-                args=("left",),
-                use_container_width=True,
-            )
-            
-            # --- 真ん中：同じくらい（小さく＆控えめデザイン） ---
-            st.markdown(
-                """
-                <div style="text-align:center; margin:6px 0 6px 0;">
-                    <button style="
-                        background-color:#e5e5e5;
-                        padding:5px 14px;
-                        border:1px solid #ccc;
-                        border-radius:8px;
-                        font-size:13px;
-                    ">
-                        同じくらい
-                    </button>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            # ↓ 実際のクリック判定ボタン（見えない）
-            st.button(
-                "同じくらい（invisible real button）",
-                key="btn_tie_mobile",
-                on_click=process_choice,
-                args=("tie",),
-                help="中央の小さいボタンを押してください",
-                use_container_width=False,
-            )
-            
-            # 下：右候補
-            st.button(
-                f"{right_item}",
-                key="btn_right_mobile",
-                on_click=process_choice,
-                args=("right",),
-                use_container_width=True,
-            )
+                st.markdown("#### 好きな方をタップしてください")
+                
+                # 上：左候補
+                st.button(
+                    f"{left_item}",
+                    key="btn_left_mobile",
+                    on_click=process_choice,
+                    args=("left",),
+                    use_container_width=True,
+                )
+                
+                # --- 真ん中：同じくらい（小さく＆控えめデザイン） ---
+                st.markdown(
+                    """
+                    <div style="text-align:center; margin:6px 0 6px 0;">
+                        <button style="
+                            background-color:#e5e5e5;
+                            padding:5px 14px;
+                            border:1px solid #ccc;
+                            border-radius:8px;
+                            font-size:13px;
+                        ">
+                            同じくらい
+                        </button>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                # ↓ 実際のクリック判定ボタン（見えない）
+                st.button(
+                    "同じくらい（invisible real button）",
+                    key="btn_tie_mobile",
+                    on_click=process_choice,
+                    args=("tie",),
+                    help="中央の小さいボタンを押してください",
+                    use_container_width=False,
+                )
+                
+                # 下：右候補
+                st.button(
+                    f"{right_item}",
+                    key="btn_right_mobile",
+                    on_click=process_choice,
+                    args=("right",),
+                    use_container_width=True,
+                )
 
 
             else:
@@ -270,6 +270,7 @@ else:
                 del st.session_state[key]
             init_state()
             st.experimental_rerun()
+
 
 
 
