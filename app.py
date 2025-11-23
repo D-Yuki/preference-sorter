@@ -8,27 +8,26 @@ def init_state():
     if "initialized" not in s:
         s.initialized = False
         s.finished = False
-        s.item_list = []         # 項目リスト
-        s.sorted_tiers = []      # [[同順位グループ1], [同順位グループ2], ...]
+        s.item_list = []
+        s.sorted_tiers = []
         s.current_index = 0
         s.inserting_item = None
         s.low = 0
         s.high = 0
         s.comparison_count = 0
-        s.raw_text = ""          # 入力テキスト
+        s.raw_text = ""
 
 
 init_state()
 
 
 # -----------------------------
-# 挿入処理を次の要素へ進める
+# 次の挿入へ進む
 # -----------------------------
 def advance_insertion():
     s = st.session_state
     s.current_index += 1
     if s.current_index >= len(s.item_list):
-        # 全部終わった
         s.finished = True
         s.inserting_item = None
         return
@@ -39,14 +38,14 @@ def advance_insertion():
 
 
 # -----------------------------
-# 左／右／同じくらい の選択処理
+# 選択処理
 # -----------------------------
 def process_choice(choice: str):
     s = st.session_state
     if not s.initialized or s.finished:
         return
 
-    # 「同じくらい」
+    # 同じくらい
     if choice == "tie":
         s.comparison_count += 1
         mid = (s.low + s.high) // 2
@@ -54,7 +53,7 @@ def process_choice(choice: str):
         advance_insertion()
         return
 
-    # 左 or 右
+    # 左右比較
     if s.low >= s.high:
         return
 
@@ -62,25 +61,21 @@ def process_choice(choice: str):
     mid = (s.low + s.high) // 2
 
     if choice == "left":
-        # 既存グループのほうが好き → 新しい項目は後ろに入る
         s.low = mid + 1
     elif choice == "right":
-        # 新しい項目のほうが好き → もっと前側に入る
         s.high = mid
 
-    # 挿入位置が確定したら挿入
     if s.low >= s.high:
         s.sorted_tiers.insert(s.low, [s.inserting_item])
         advance_insertion()
 
 
 # -----------------------------
-# 画面レイアウト
+# UI
 # -----------------------------
 
-st.title("好みソートツール（同順位対応・スマホ対応UI）")
+st.title("好みソートツール（スマホUI対応 & 同順位対応）")
 
-# ★ スマホ・PC レイアウト切り替え
 layout_mode = st.radio(
     "レイアウトモード",
     ["スマホ用レイアウト", "PC用レイアウト"],
@@ -89,14 +84,14 @@ layout_mode = st.radio(
 
 st.markdown(
     """
-1. 下のテキストに **1行に1つずつ** 項目を入力するか、ファイルを読み込みます  
-2. 「② ソート開始」を押すと比較画面が出ます  
-3. 「好きな方のボタン」を押し続けるとランキングが完成します  
-4. 結果は TXT としてダウンロードできます
+1. 下のテキストに **1行に1つずつ** 項目を入力  
+2. 「② ソート開始」で比較スタート  
+3. 「左」「同じくらい」「右」で順位付け  
+4. TXTダウンロード可
 """
 )
 
-# --- 入力エリア ---
+# 入力エリア
 st.header("① 項目の入力")
 
 col1, col2 = st.columns(2)
@@ -106,28 +101,25 @@ with col1:
         "1行に1つずつ入力してください",
         key="raw_text",
         height=240,
-        placeholder="例:\n北海道\n青森県\n岩手県\n...",
+        placeholder="北海道\n青森県\n岩手県",
     )
 
 with col2:
-    uploaded = st.file_uploader("テキストファイルから読み込み（任意）", type=["txt"])
-    if uploaded is not None:
-        if st.button("このファイルの内容を左のテキストに読み込む"):
-            content = uploaded.read().decode("utf-8", errors="ignore")
-            st.session_state.raw_text = content
-            st.experimental_rerun()
+    uploaded = st.file_uploader("テキストファイルから読み込み", type=["txt"])
+    if uploaded and st.button("左の欄に読み込む"):
+        content = uploaded.read().decode("utf-8", errors="ignore")
+        st.session_state.raw_text = content
+        st.experimental_rerun()
 
-    st.caption("・UTF-8 / Shift-JIS どちらでもだいたいOKです\n・読み込んだ後は左側で編集できます")
-
-# --- ソート開始ボタン ---
+# ソート開始
 if st.button("② ソート開始"):
     lines = [line.strip() for line in st.session_state.raw_text.splitlines() if line.strip()]
     if len(lines) < 2:
-        st.warning("2個以上の項目を入力してください。")
+        st.warning("2個以上の項目を入力してください")
     else:
         s = st.session_state
         s.item_list = lines
-        s.sorted_tiers = [[lines[0]]]      # 1つ目を1位グループとして追加
+        s.sorted_tiers = [[lines[0]]]
         s.current_index = 1
         s.inserting_item = lines[1]
         s.low = 0
@@ -135,22 +127,21 @@ if st.button("② ソート開始"):
         s.comparison_count = 0
         s.initialized = True
         s.finished = False
-        st.success("ソートを開始しました。下の比較エリアに移動してください。")
 
 st.divider()
 
-# --- 比較エリア ---
-st.header("③ 比較して順位を決める")
+# 比較エリア
+st.header("③ 比較")
 
 s = st.session_state
 
 if not s.initialized:
-    st.info("まず上で項目を入力して「② ソート開始」を押してください。")
+    st.info("まず項目を入力してソート開始を押してください")
 else:
     if not s.finished and s.inserting_item is not None:
         st.write(
-            f"**{s.current_index + 1} / {len(s.item_list)} 個目** を挿入中　｜　"
-            f"比較回数: **{s.comparison_count}**"
+            f"**{s.current_index + 1} / {len(s.item_list)}** 個目 ｜ "
+            f"比較回数：**{s.comparison_count}**"
         )
 
         if s.low < s.high:
@@ -158,119 +149,92 @@ else:
             left_item = s.sorted_tiers[mid][0]
             right_item = s.inserting_item
 
-            # ▼ レイアウトモードによってUIを切り替える
+            # -------- スマホ用レイアウト --------
             if layout_mode == "スマホ用レイアウト":
-               # ===== スマホ用：項目名＝ボタン（縦3つだけ） =====
-                st.markdown("#### 好きな方をタップしてください")
-                
-                # 上：左候補
+
+                # ★ 同じくらいを上に配置（デザインは前のまま）
                 st.button(
-                    f"{left_item}",
-                    key="btn_left_mobile",
+                    "同じくらい",
+                    key="tie_mobile",
+                    on_click=process_choice,
+                    args=("tie",),
+                    use_container_width=True,
+                )
+
+                # 左候補
+                st.button(
+                    f"← {left_item}",
+                    key="left_mobile",
                     on_click=process_choice,
                     args=("left",),
                     use_container_width=True,
                 )
-                
-                # --- 真ん中：同じくらい（小さく＆控えめデザイン） ---
-                st.markdown(
-                    """
-                    <div style="text-align:center; margin:6px 0 6px 0;">
-                        <button style="
-                            background-color:#e5e5e5;
-                            padding:5px 14px;
-                            border:1px solid #ccc;
-                            border-radius:8px;
-                            font-size:13px;
-                        ">
-                            同じくらい
-                        </button>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                # ↓ 実際のクリック判定ボタン（見えない）
+
+                # 右候補
                 st.button(
-                    "同じくらい（invisible real button）",
-                    key="btn_tie_mobile",
-                    on_click=process_choice,
-                    args=("tie",),
-                    help="中央の小さいボタンを押してください",
-                    use_container_width=False,
-                )
-                
-                # 下：右候補
-                st.button(
-                    f"{right_item}",
-                    key="btn_right_mobile",
+                    f"{right_item} →",
+                    key="right_mobile",
                     on_click=process_choice,
                     args=("right",),
                     use_container_width=True,
                 )
 
-
+            # -------- PC用レイアウト --------
             else:
-                # ===== PC用：左右＋中央 3カラム =====
                 colL, colC, colR = st.columns([3, 2, 3])
 
                 with colL:
-                    st.markdown("#### 左")
                     st.button(
                         left_item,
-                        key="btn_left_pc",
+                        key="left_pc",
                         on_click=process_choice,
                         args=("left",),
                         use_container_width=True,
                     )
 
                 with colC:
-                    st.markdown("#### 同じくらい")
                     st.button(
                         "同じくらい",
-                        key="btn_tie_pc",
+                        key="tie_pc",
                         on_click=process_choice,
                         args=("tie",),
                         use_container_width=True,
                     )
 
                 with colR:
-                    st.markdown("#### 右")
                     st.button(
                         right_item,
-                        key="btn_right_pc",
+                        key="right_pc",
                         on_click=process_choice,
                         args=("right",),
                         use_container_width=True,
                     )
+
         else:
-            # low >= high なのに挿入がまだの場合の保険
             s.sorted_tiers.insert(s.low, [s.inserting_item])
             advance_insertion()
 
-    # --- 結果表示 ---
+    # 結果
     if s.finished:
-        st.subheader("④ ランキング結果（同順位は / で区切り）")
+        st.subheader("④ 結果")
 
-        lines = []
-        for rank, tier in enumerate(s.sorted_tiers, start=1):
-            lines.append(f"{rank}位: {' / '.join(tier)}")
-        result_text = "\n".join(lines)
+        out_lines = [
+            f"{i+1}位: {' / '.join(tier)}"
+            for i, tier in enumerate(s.sorted_tiers)
+        ]
+        result_text = "\n".join(out_lines)
 
-        st.text_area("結果", value=result_text, height=260)
+        st.text_area("ランキング", value=result_text, height=260)
 
         st.download_button(
-            label="⑤ TXTとしてダウンロード",
+            "TXTとしてダウンロード",
             data=result_text,
-            file_name="preference_ranking.txt",
+            file_name="ranking.txt",
             mime="text/plain",
         )
 
-        if st.button("初期化してやり直す"):
+        if st.button("やり直す"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             init_state()
             st.experimental_rerun()
-
-
-
-
