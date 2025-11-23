@@ -1,4 +1,4 @@
-import streamlit as st
+⁸import streamlit as st
 
 # ==============================
 # セッション状態の初期化
@@ -68,14 +68,18 @@ def process_choice(choice: str):
 # ==============================
 st.title("好みソートツール（同順位あり）")
 
-# --- ボタン押下時の色変化を消す ---
 st.markdown(
     """
     <style>
-    .stButton > button:focus, .stButton > button:active {
-        background-color: inherit !important;
-        color: inherit !important;
+    /* 押したあとに残る青枠・強調スタイルだけ消す */
+    .stButton > button:focus {
+        outline: none !important;
         box-shadow: none !important;
+    }
+
+    /* 押した瞬間だけ、ちょっと沈むような動きにする */
+    .stButton > button:active {
+        transform: translateY(1px);
     }
     </style>
     """,
@@ -187,3 +191,4 @@ if s.finished:
             del st.session_state[key]
         init_state()
         st.rerun()
+
