@@ -68,19 +68,39 @@ def process_choice(choice: str):
 # ==============================
 st.title("好みソートツール（同順位あり）")
 
-# ====== ボタン押した瞬間だけ沈む（押した感を出す） ======
+# ----- ボタンの見た目を完全にコントロールする CSS -----
 st.markdown(
     """
     <style>
-    /* 押した後に色が残る演出は消す */
-    .stButton > button:focus {
-        outline: none !important;
+    /* すべての st.button に共通のスタイルを適用 */
+    .stButton > button {
+        background-color: #f0f0f0 !important;  /* 基本色 */
+        color: #000000 !important;
+        border: 1px solid #cccccc !important;
+        border-radius: 6px !important;
         box-shadow: none !important;
+        padding: 0.4em 0.75em !important;
+        font-size: 15px !important;
+        transition: background-color 0.05s ease-out, transform 0.05s ease-out;
     }
 
-    /* 押した瞬間だけ少し沈む */
+    /* マウスを乗せたとき（少しだけ濃く） */
+    .stButton > button:hover {
+        background-color: #e4e4e4 !important;
+    }
+
+    /* フォーカスが当たった状態でも色を変えない（残らないようにする） */
+    .stButton > button:focus {
+        background-color: #f0f0f0 !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    /* 押している瞬間だけ少し沈む & ちょっとだけ濃く */
     .stButton > button:active {
-        transform: translateY(2px);
+        background-color: #dcdcdc !important;
+        transform: translateY(1px);
     }
     </style>
     """,
