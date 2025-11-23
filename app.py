@@ -38,14 +38,14 @@ def advance_insertion():
 
 
 # -----------------------------
-# 選択処理
+# 左／右／同じ の選択処理
 # -----------------------------
 def process_choice(choice: str):
     s = st.session_state
     if not s.initialized or s.finished:
         return
 
-    # 「同じくらい」：今見ているグループに同順位で追加
+    # 「同じ」：今見ているグループに同順位で追加
     if choice == "tie":
         s.comparison_count += 1
         mid = (s.low + s.high) // 2
@@ -53,7 +53,7 @@ def process_choice(choice: str):
         advance_insertion()
         return
 
-    # 左右のどちらか
+    # 上 or 下 のどちらか（内部的には left / right で扱う）
     if s.low >= s.high:
         return
 
@@ -61,10 +61,10 @@ def process_choice(choice: str):
     mid = (s.low + s.high) // 2
 
     if choice == "left":
-        # 左（既存グループ）の方が好み → 新しい要素は後ろ側
+        # 1つ目（既存グループ）の方が好み → 新しい要素は後ろ側
         s.low = mid + 1
     elif choice == "right":
-        # 右（新しい要素）の方が好み → もっと前側
+        # 2つ目（新しい要素）の方が好み → もっと前側
         s.high = mid
 
     # 挿入位置が確定したらそこに追加
@@ -83,9 +83,9 @@ st.markdown(
 1. 下のテキストに **1行に1つずつ** 項目を入力  
 2. 「② ソート開始」で比較スタート  
 3. ③の画面で  
-   - 一番上の「同じくらい（同順位）」ボタン  
-   - 左の薄い緑エリア or 右の薄い赤エリアのボタン  
-4. 並べ替え完了後、TXT でダウンロードできます。
+   - 上の「同じ」ボタン  
+   - その下の 2 つの項目ボタンのうち好きな方を選択  
+4. 完了後、TXT でダウンロードできます。
 """
 )
 
@@ -99,7 +99,7 @@ with col1:
         "1行に1つずつ入力してください",
         key="raw_text",
         height=260,
-        placeholder="例:\n曇天、けふを往く\nMOVING ON\nニヒっ\nライキーライキー\n...",
+        placeholder="例:\nA\nB\nC\nD",
     )
 
 with col2:
@@ -117,7 +117,7 @@ if st.button("② ソート開始"):
     else:
         s = st.session_state
         s.item_list = lines
-        s.sorted_tiers = [[lines[0]]]
+        s.sorted_tiers = [[lines[0]]]  # 1つ目を1位グループとして追加
         s.current_index = 1
         s.inserting_item = lines[1]
         s.low = 0
@@ -146,65 +146,32 @@ else:
         # 現在の比較ペア
         if s.low < s.high:
             mid = (s.low + s.high) // 2
-            left_item = s.sorted_tiers[mid][0]
-            right_item = s.inserting_item
+            first_item = s.sorted_tiers[mid][0]   # 1つ目の項目（既存グループ代表）
+            second_item = s.inserting_item        # 2つ目の項目（挿入中）
         else:
             s.sorted_tiers.insert(s.low, [s.inserting_item])
             advance_insertion()
-            left_item = right_item = None
+            first_item = second_item = None
 
-        if left_item and right_item:
+        if first_item and second_item:
             st.markdown("#### 好きな方を選んでください")
 
-            # --- 一番上：同じくらい（白いボタン） ---
-            if st.button("同じくらい（同順位）", key=f"tie_{s.current_index}", use_container_width=True):
-                process_choice("tie")
+            # --- 「同じ」ボタン（左右中央） ---
+            colL, colC, colR = st.columns([1, 2, 1])
+            with colC:
+                if st.button("同じ", use_container_width=True, key=f"tie_{s.current_index}"):
+                    process_choice("tie")
 
-            # --- 下に2つの色付きエリア ---
-            colL, colR = st.columns(2)
+            # 1行スペース
+            st.write("")
 
-            # 左：薄い緑エリア
-            with colL:
-                st.markdown(
-                    f"""
-                    <div style="
-                        background-color:#ecffec;
-                        border-radius:10px;
-                        padding:10px;
-                        margin-top:6px;
-                        margin-bottom:6px;
-                        text-align:center;
-                        font-size:16px;
-                    ">
-                        {left_item}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                # 実際のボタン（見た目は通常ボタンだが、緑エリアのすぐ下に置く）
-                if st.button("こちらを選ぶ", key=f"left_{s.current_index}", use_container_width=True):
-                    process_choice("left")
+            # --- 1つ目の項目ボタン（上） ---
+            if st.button(first_item, use_container_width=True, key=f"first_{s.current_index}"):
+                process_choice("left")
 
-            # 右：薄い赤エリア
-            with colR:
-                st.markdown(
-                    f"""
-                    <div style="
-                        background-color:#ffecec;
-                        border-radius:10px;
-                        padding:10px;
-                        margin-top:6px;
-                        margin-bottom:6px;
-                        text-align:center;
-                        font-size:16px;
-                    ">
-                        {right_item}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                if st.button("こちらを選ぶ ", key=f"right_{s.current_index}", use_container_width=True):
-                    process_choice("right")
+            # --- 2つ目の項目ボタン（下） ---
+            if st.button(second_item, use_container_width=True, key=f"second_{s.current_index}"):
+                process_choice("right")
 
     # ---------------- ④ 完了 ----------------
     if s.finished:
