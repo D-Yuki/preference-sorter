@@ -152,18 +152,31 @@ else:
             # -------- スマホ用レイアウト --------
             if layout_mode == "スマホ用レイアウト":
 
-                # ★ 同じくらいを上に配置（デザインは前のまま）
+                st.markdown("""
+                    <div style="text-align:center;">
+                        <button style="
+                            width:40%;
+                            background-color:#f0f0f0;
+                            padding:6px 10px;
+                            border:1px solid #bbb;
+                            border-radius:10px;
+                            font-size:14px;
+                        ">
+                            同じくらい
+                        </button>
+                    </div>
+                """, unsafe_allow_html=True)
+                
                 st.button(
-                    "同じくらい",
+                    "同じくらい（invisible real button）",
                     key="tie_mobile",
                     on_click=process_choice,
                     args=("tie",),
-                    use_container_width=True,
                 )
 
                 # 左候補
                 st.button(
-                    f"← {left_item}",
+                    f"{left_item}",
                     key="left_mobile",
                     on_click=process_choice,
                     args=("left",),
@@ -172,7 +185,7 @@ else:
 
                 # 右候補
                 st.button(
-                    f"{right_item} →",
+                    f"{right_item}",
                     key="right_mobile",
                     on_click=process_choice,
                     args=("right",),
@@ -238,3 +251,4 @@ else:
                 del st.session_state[key]
             init_state()
             st.experimental_rerun()
+
