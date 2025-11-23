@@ -78,7 +78,7 @@ def process_choice(choice: str):
 # 画面レイアウト
 # -----------------------------
 
-st.title("好みソートツール（Streamlit版・同順位対応）")
+st.title("好みソートツール（同順位対応・スマホ対応UI）")
 
 # ★ スマホ・PC レイアウト切り替え
 layout_mode = st.radio(
@@ -91,7 +91,7 @@ st.markdown(
     """
 1. 下のテキストに **1行に1つずつ** 項目を入力するか、ファイルを読み込みます  
 2. 「② ソート開始」を押すと比較画面が出ます  
-3. 「左が好き／同じくらい／右が好き」を選び続けるとランキングが完成します  
+3. 「好きな方のボタン」を押し続けるとランキングが完成します  
 4. 結果は TXT としてダウンロードできます
 """
 )
@@ -105,8 +105,8 @@ with col1:
     st.text_area(
         "1行に1つずつ入力してください",
         key="raw_text",
-        height=260,
-        placeholder="例:\n北海道\n青森県\n“岩手県\n...",
+        height=240,
+        placeholder="例:\n北海道\n青森県\n岩手県\n...",
     )
 
 with col2:
@@ -117,12 +117,7 @@ with col2:
             st.session_state.raw_text = content
             st.experimental_rerun()
 
-    st.markdown(
-        """
-- UTF-8 / Shift-JIS どちらでもだいたいOKです  
-- 読み込んだ後は左のテキストで編集できます
-"""
-    )
+    st.caption("・UTF-8 / Shift-JIS どちらでもだいたいOKです\n・読み込んだ後は左側で編集できます")
 
 # --- ソート開始ボタン ---
 if st.button("② ソート開始"):
@@ -153,8 +148,6 @@ if not s.initialized:
     st.info("まず上で項目を入力して「② ソート開始」を押してください。")
 else:
     if not s.finished and s.inserting_item is not None:
-        st.subheader("比較中…")
-
         st.write(
             f"**{s.current_index + 1} / {len(s.item_list)} 個目** を挿入中　｜　"
             f"比較回数: **{s.comparison_count}**"
@@ -167,19 +160,19 @@ else:
 
             # ▼ レイアウトモードによってUIを切り替える
             if layout_mode == "スマホ用レイアウト":
-                # ===== スマホ用：縦並び・ボタン大きめ =====
-                st.markdown("#### 左（既にある順位の代表）")
-                st.info(left_item)
+                # ===== スマホ用：項目名＝ボタン（縦3つだけ） =====
+                st.markdown("#### 好きな方をタップしてください")
+
+                # 上：左候補
                 st.button(
-                    "左が好き ←",
+                    f"← {left_item}",
                     key="btn_left_mobile",
                     on_click=process_choice,
                     args=("left",),
                     use_container_width=True,
                 )
 
-                st.markdown("#### 同じくらい")
-                st.write("同順位にしたいときはこちら")
+                # 真ん中：同じくらい
                 st.button(
                     "同じくらい（同順位）",
                     key="btn_tie_mobile",
@@ -188,10 +181,9 @@ else:
                     use_container_width=True,
                 )
 
-                st.markdown("#### 右（新しく挿入する項目）")
-                st.success(right_item)
+                # 下：右候補
                 st.button(
-                    "右が好き →",
+                    f"{right_item} →",
                     key="btn_right_mobile",
                     on_click=process_choice,
                     args=("right",),
@@ -203,10 +195,9 @@ else:
                 colL, colC, colR = st.columns([3, 2, 3])
 
                 with colL:
-                    st.markdown("#### 左（既にある順位）")
-                    st.info(left_item)
+                    st.markdown("#### 左")
                     st.button(
-                        "左が好き ←",
+                        left_item,
                         key="btn_left_pc",
                         on_click=process_choice,
                         args=("left",),
@@ -215,7 +206,6 @@ else:
 
                 with colC:
                     st.markdown("#### 同じくらい")
-                    st.write("同順位にしたいとき")
                     st.button(
                         "同じくらい",
                         key="btn_tie_pc",
@@ -225,10 +215,9 @@ else:
                     )
 
                 with colR:
-                    st.markdown("#### 右（新項目）")
-                    st.success(right_item)
+                    st.markdown("#### 右")
                     st.button(
-                        "右が好き →",
+                        right_item,
                         key="btn_right_pc",
                         on_click=process_choice,
                         args=("right",),
