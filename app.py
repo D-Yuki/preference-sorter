@@ -6,16 +6,16 @@ import streamlit as st
 def init_state():
     s = st.session_state
     if "initialized" not in s:
-        s.initialized = False
-        s.finished = False
-        s.item_list = []
-        s.sorted_tiers = []
-        s.current_index = 0
-        s.inserting_item = None
+        s.initialized = False      # ソート開始済みか
+        s.finished = False         # 並び替え完了か
+        s.item_list = []           # 元の項目リスト
+        s.sorted_tiers = []        # [[同順位グループ1], [同順位グループ2], ...]
+        s.current_index = 0        # 何個目を挿入中か
+        s.inserting_item = None    # 今挿入中の項目
         s.low = 0
         s.high = 0
         s.comparison_count = 0
-        s.raw_text = ""
+        s.raw_text = ""            # 入力テキスト
 
 init_state()
 
@@ -27,6 +27,7 @@ def advance_insertion():
     s = st.session_state
     s.current_index += 1
     if s.current_index >= len(s.item_list):
+        # 全て挿入し終えた
         s.finished = True
         s.inserting_item = None
         return
@@ -44,7 +45,7 @@ def process_choice(choice: str):
     if not s.initialized or s.finished:
         return
 
-    # 同じくらい
+    # 「同じくらい」：今見ているグループに同順位で追加
     if choice == "tie":
         s.comparison_count += 1
         mid = (s.low + s.high) // 2
@@ -52,6 +53,7 @@ def process_choice(choice: str):
         advance_insertion()
         return
 
+    # 左右のどちらか
     if s.low >= s.high:
         return
 
@@ -59,17 +61,20 @@ def process_choice(choice: str):
     mid = (s.low + s.high) // 2
 
     if choice == "left":
+        # 左（既存グループ）の方が好み → 新しい要素は後ろ側
         s.low = mid + 1
     elif choice == "right":
+        # 右（新しい要素）の方が好み → もっと前側
         s.high = mid
 
+    # 挿入位置が確定したらそこに追加
     if s.low >= s.high:
         s.sorted_tiers.insert(s.low, [s.inserting_item])
         advance_insertion()
 
 
 # -----------------------------
-# UI
+# UI 本体
 # -----------------------------
 st.title("好みソートツール（同順位あり）")
 
@@ -78,9 +83,9 @@ st.markdown(
 1. 下のテキストに **1行に1つずつ** 項目を入力  
 2. 「② ソート開始」で比較スタート  
 3. ③の画面で  
-   - 真ん中の「同じくらい（同順位）」ボタン  
-   - 左右の2つのボタンから好きな方を選択  
-4. 完了後にTXTファイルがダウンロードできます。
+   - 一番上の「同じくらい（同順位）」ボタン  
+   - 左の薄い緑エリア or 右の薄い赤エリアのボタン  
+4. 並べ替え完了後、TXT でダウンロードできます。
 """
 )
 
@@ -94,19 +99,21 @@ with col1:
         "1行に1つずつ入力してください",
         key="raw_text",
         height=260,
-        placeholder="例:\nA\nB\nC\nD",
+        placeholder="例:\n曇天、けふを往く\nMOVING ON\nニヒっ\nライキーライキー\n...",
     )
 
 with col2:
-    uploaded = st.file_uploader("テキストファイルから読み込み", type=["txt"])
-    if uploaded and st.button("左に読み込む"):
-        st.session_state.raw_text = uploaded.read().decode("utf-8", errors="ignore")
+    uploaded = st.file_uploader("テキストファイルから読み込み（任意）", type=["txt"])
+    if uploaded is not None:
+        if st.button("左の欄に読み込む"):
+            content = uploaded.read().decode("utf-8", errors="ignore")
+            st.session_state.raw_text = content
 
 # ---------------- ② ソート開始 ----------------
 if st.button("② ソート開始"):
     lines = [x.strip() for x in st.session_state.raw_text.splitlines() if x.strip()]
     if len(lines) < 2:
-        st.warning("2個以上の項目を入力してください")
+        st.warning("2個以上の項目を入力してください。")
     else:
         s = st.session_state
         s.item_list = lines
@@ -118,7 +125,7 @@ if st.button("② ソート開始"):
         s.comparison_count = 0
         s.initialized = True
         s.finished = False
-        st.success("ソート開始しました！")
+        st.success("ソートを開始しました。下の『③ 比較』に進んでください。")
 
 st.divider()
 
@@ -128,15 +135,15 @@ st.header("③ 比較")
 s = st.session_state
 
 if not s.initialized:
-    st.info("項目を入力してソート開始を押してください。")
-
+    st.info("まず項目を入力して「② ソート開始」を押してください。")
 else:
-    if not s.finished and s.inserting_item:
+    if not s.finished and s.inserting_item is not None and len(s.sorted_tiers) > 0:
         st.write(
             f"{s.current_index + 1} / {len(s.item_list)} 個目 ｜ "
             f"比較回数：{s.comparison_count}"
         )
 
+        # 現在の比較ペア
         if s.low < s.high:
             mid = (s.low + s.high) // 2
             left_item = s.sorted_tiers[mid][0]
@@ -147,91 +154,78 @@ else:
             left_item = right_item = None
 
         if left_item and right_item:
+            st.markdown("#### 好きな方を選んでください")
 
-            # -------- ボタン配置（左右中央に同じくらいボタン） --------
-            colL, colC, colR = st.columns([3, 2, 3])
+            # --- 一番上：同じくらい（白いボタン） ---
+            if st.button("同じくらい（同順位）", key=f"tie_{s.current_index}", use_container_width=True):
+                process_choice("tie")
 
-            # 左ボタン（薄い赤）
+            # --- 下に2つの色付きエリア ---
+            colL, colR = st.columns(2)
+
+            # 左：薄い緑エリア
             with colL:
-                left_label = f"\n\n{left_item}\n\n"
-                if st.button(
-                    left_label,
-                    use_container_width=True,
-                    key=f"left_{s.current_index}",
-                    help="左の項目がより好き",
-                    type="secondary"
-                ):
+                st.markdown(
+                    f"""
+                    <div style="
+                        background-color:#ecffec;
+                        border-radius:10px;
+                        padding:10px;
+                        margin-top:6px;
+                        margin-bottom:6px;
+                        text-align:center;
+                        font-size:16px;
+                    ">
+                        {left_item}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                # 実際のボタン（見た目は通常ボタンだが、緑エリアのすぐ下に置く）
+                if st.button("こちらを選ぶ", key=f"left_{s.current_index}", use_container_width=True):
                     process_choice("left")
 
+            # 右：薄い赤エリア
+            with colR:
                 st.markdown(
-                    """
-                    <style>
-                        .stButton button {
-                            background-color: #ffecec !important;
-                            border: 1px solid #ffb3b3 !important;
-                            font-size: 18px !important;
-                            height: 60px !important;
-                        }
-                    </style>
+                    f"""
+                    <div style="
+                        background-color:#ffecec;
+                        border-radius:10px;
+                        padding:10px;
+                        margin-top:6px;
+                        margin-bottom:6px;
+                        text-align:center;
+                        font-size:16px;
+                    ">
+                        {right_item}
+                    </div>
                     """,
                     unsafe_allow_html=True
                 )
-
-            # 中央（同じくらい）
-            with colC:
-                if st.button(
-                    "同じくらい\n（同順位）",
-                    use_container_width=True,
-                    key=f"tie_{s.current_index}"
-                ):
-                    process_choice("tie")
-
-            # 右ボタン（薄い緑）
-            with colR:
-                right_label = f"\n\n{right_item}\n\n"
-                if st.button(
-                    right_label,
-                    use_container_width=True,
-                    key=f"right_{s.current_index}",
-                    help="右の項目がより好き",
-                ):
+                if st.button("こちらを選ぶ ", key=f"right_{s.current_index}", use_container_width=True):
                     process_choice("right")
 
-                st.markdown(
-                    """
-                    <style>
-                        .stButton button {
-                            background-color: #ecffec !important;
-                            border: 1px solid #b3ffb3 !important;
-                            font-size: 18px !important;
-                            height: 60px !important;
-                        }
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-
-    # ----------- 完了表示 -----------
+    # ---------------- ④ 完了 ----------------
     if s.finished:
-        st.subheader("④ ランキング結果")
+        st.subheader("④ ランキング結果（同順位は / で区切り）")
 
         lines = []
-        for i, tier in enumerate(s.sorted_tiers, start=1):
-            lines.append(f"{i}位: {' / '.join(tier)}")
+        for rank, tier in enumerate(s.sorted_tiers, start=1):
+            items_str = " / ".join(tier)
+            lines.append(f"{rank}位: {items_str}")
+        result_text = "\n".join(lines)
 
-        result = "\n".join(lines)
-
-        st.text_area("結果", result, height=260)
+        st.text_area("結果", value=result_text, height=260)
 
         st.download_button(
-            "TXTとしてダウンロード",
-            data=result,
-            file_name="ranking.txt",
+            label="TXT としてダウンロード",
+            data=result_text,
+            file_name="preference_ranking.txt",
             mime="text/plain",
         )
 
-        if st.button("やり直す"):
+        if st.button("最初からやり直す"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             init_state()
