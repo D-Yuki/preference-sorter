@@ -80,7 +80,7 @@ st.title("好みソートツール（スマホ対応・同順位あり）")
 
 layout_mode = st.radio(
     "レイアウトモード",
-    ["スマホ用レイアウト（縦3ボタン）", "PC用レイアウト（横3ボタン）"],
+    ["スマホ用レイアウト（縦並び）", "PC用レイアウト（横並び）"],
     horizontal=True,
 )
 
@@ -89,9 +89,8 @@ st.markdown(
 1. 下のテキストに **1行に1つずつ** 項目を入力  
 2. 「② ソート開始」で比較スタート  
 3. ③の画面で  
-   - 左ボタン：左の項目の方が好き  
-   - 真ん中：同じくらい好き  
-   - 右ボタン：右の項目の方が好き  
+   - 上の「＝ 同じくらい（同順位）＝」ボタン  
+   - 下の2つのボタンから好きな方を選択  
 4. 並び替え完了後、TXTファイルとしてダウンロードできます。
 """
 )
@@ -162,41 +161,40 @@ else:
             advance_insertion()
             left_item = right_item = None
 
-        # ボタンUI
         if left_item is not None and right_item is not None:
+            st.markdown("#### 好きな方を選んでください")
+
+            # --- まず「同じくらい」ボタン（上） ---
             if layout_mode.startswith("スマホ用"):
-                # --- スマホ：縦に3ボタン ---
-                st.markdown("#### どちらが好みですか？")
-
-                if st.button(f"左の方が好き：{left_item}", use_container_width=True, key="left_sp"):
-                    process_choice("left")
-                    st.experimental_rerun()
-
-                if st.button("同じくらい", use_container_width=True, key="tie_sp"):
+                # スマホ：縦並び
+                if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, type="primary", key="tie_sp"):
                     process_choice("tie")
                     st.experimental_rerun()
 
-                if st.button(f"右の方が好き：{right_item}", use_container_width=True, key="right_sp"):
+                # 下に2つの候補ボタン（ラベルは曲名だけ）
+                if st.button(left_item, use_container_width=True, key="left_sp"):
+                    process_choice("left")
+                    st.experimental_rerun()
+
+                if st.button(right_item, use_container_width=True, key="right_sp"):
                     process_choice("right")
                     st.experimental_rerun()
 
             else:
-                # --- PC：横に3ボタン ---
-                st.markdown("#### どちらが好みですか？")
-                colL, colC, colR = st.columns([4, 2, 4])
+                # PC：同じくらいボタン → 左右2列
+                if st.button("＝ 同じくらい（同順位）＝", use_container_width=True, type="primary", key="tie_pc"):
+                    process_choice("tie")
+                    st.experimental_rerun()
+
+                colL, colR = st.columns(2)
 
                 with colL:
-                    if st.button(f"左：{left_item}", use_container_width=True, key="left_pc"):
+                    if st.button(left_item, use_container_width=True, key="left_pc"):
                         process_choice("left")
                         st.experimental_rerun()
 
-                with colC:
-                    if st.button("同じくらい", use_container_width=True, key="tie_pc"):
-                        process_choice("tie")
-                        st.experimental_rerun()
-
                 with colR:
-                    if st.button(f"右：{right_item}", use_container_width=True, key="right_pc"):
+                    if st.button(right_item, use_container_width=True, key="right_pc"):
                         process_choice("right")
                         st.experimental_rerun()
 
